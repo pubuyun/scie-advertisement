@@ -44,8 +44,11 @@ def fetchinfo(psid, passwd):
 
     session = requests.Session()
 
+    mainurl = "https://www.alevel.com.cn/"
     encrypturl = "https://www.alevel.com.cn/user/encryption/"
     loginurl = "https://www.alevel.com.cn/login/"
+    scoreurl = f'https://www.alevel.com.cn/user/{psid}/assessment/list/'
+    referralurl = f'https://www.alevel.com.cn/user/{psid}/referralcomment'
 
     session.headers.update(headers)
     response = session.get(loginurl)
@@ -65,7 +68,6 @@ def fetchinfo(psid, passwd):
     else:
         print(f'[{response.status_code}] ', response.text)
         return False
-        
 
     RequestData = {'nosence': Nosence, 'psid': psid, 'passwd': PasswdEncrypted, 'rememberpsid': 1, 'post':"登 录/Login"}
     print(RequestData)
@@ -81,7 +83,6 @@ def fetchinfo(psid, passwd):
     else:
         print(f'[{response.status_code}] ', response.text)
         
-    scoreurl = f'https://www.alevel.com.cn/user/{psid}/assessment/list/'
     response = session.get(scoreurl)
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -90,8 +91,8 @@ def fetchinfo(psid, passwd):
             or
             (tag.name == 'tr' and tag.get('bgcolor') == "#76EE00")
     ))
-        teachers = {'English': [], 'Biology': [], 'Chemistry': [], 'Physics': [], 'Mathematics': [], 'Computer Science': []}
         results = {'English': [], 'Biology': [], 'Chemistry': [], 'Physics': [], 'Mathematics': [], 'Computer Science': []}
+        referrals = {'English': [], 'Biology': [], 'Chemistry': [], 'Physics': [], 'Mathematics': [], 'Computer Science': []}
         # for every bgcolor="#76EE00" <tr> there are 7 <td>, the fifth <td> is the score, the sixth <td> is the full score
         for score_cell in score_cells:
             if score_cell.name == 'td':
@@ -104,19 +105,30 @@ def fetchinfo(psid, passwd):
                 # remove non-digit characters except dot
                 score = ''.join([char for char in scores[4].text if char.isdigit() or char == '.'])
                 full_score = ''.join([char for char in scores[5].text if char.isdigit() or char == '.'])
-                # add scores[1] as teacher
-                teachers[currentSubject].append(scores[1].text) if scores[1].text not in teachers[currentSubject] else None
                 if score and full_score:
                     results[currentSubject].append(float(score)/float(full_score))
-        return results
     else:
         print(f'[{response.status_code}] ', response.text)
         return False
-    referralurl = f'https://www.alevel.com.cn/user/{psid}/referralcomment'
+    
     response = session.get(referralurl)
     # find all <a>, text = Detail
-    # for every <a> get the href
     soup = BeautifulSoup(response.text, 'html.parser')
+    referral_cells = soup.find_all('a', text='Detail')
+    # get the href of every <a>
+    referral_links = [mainurl+cell.get('href') for cell in referral_cells]
+    for link in referral_links:
+        response = session.get(link)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            referral = soup.find('p', text=True).string
+            subject = soup.find('strong').string
+            if subject in referrals.keys():
+                referrals[subject].append(referral)
+        else:
+            print(f'[{response.status_code}] ', response.text)
+            return False
+    return results, referrals
 
 if __name__ == "__main__":
     psid = input("Input username: ")
