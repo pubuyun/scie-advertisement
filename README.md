@@ -1,2 +1,2 @@
 # scie-advertisement
- cs project
+cs project
