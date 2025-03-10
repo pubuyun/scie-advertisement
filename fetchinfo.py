@@ -1,3 +1,4 @@
+# encryption function of CMS login
 # function encryption(){
 #         var f=$("#username").val();
 #         var g=$("#passwd").val();
@@ -31,6 +32,7 @@
 import requests
 import time
 import hashlib
+import re
 from bs4 import BeautifulSoup
 
 
