@@ -58,13 +58,14 @@ class cmsFetcher:
         response = self.session.get(self.loginurl)
         time.sleep(0.2)
 
-        response = self.session.post(self.encrypturl, data=f"psid={username}")
+        response = self.session.post(self.encrypturl, data=f"psid={self.username}")
         if response.status_code == 200:
             ResponseData = response.json()
             if ResponseData["status"] == "OK":
                 salt = ResponseData["salt"]
                 PasswdEncrypted = (
-                    salt + hashlib.md5((salt + passwd).encode()).hexdigest().upper()
+                    salt
+                    + hashlib.md5((salt + self.passwd).encode()).hexdigest().upper()
                 )
                 Nosence = ResponseData["nosence"]
             else:
@@ -76,7 +77,7 @@ class cmsFetcher:
 
         RequestData = {
             "nosence": Nosence,
-            "psid": username,
+            "psid": self.username,
             "passwd": PasswdEncrypted,
             "rememberusername": 1,
             "post": "登 录/Login",
@@ -88,14 +89,14 @@ class cmsFetcher:
                 return False
             cookies = self.session.cookies.get_dict()
             print("Login successfully!")
-            print("id:", username)
+            print("id:", self.username)
             print("Login cookies", cookies)
             return True
         else:
             print(f"[{response.status_code}] ", response.text)
             return False
 
-    def fetchScore(self):
+    def fetch_score(self):
         response = self.session.get(self.scoreurl)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
@@ -141,7 +142,7 @@ class cmsFetcher:
         self.scores = results
         return True
 
-    def get_referrals(self):
+    def fetch_referrals(self):
         referrals = {}
         response = self.session.get(self.referralurl)
 
@@ -167,13 +168,19 @@ class cmsFetcher:
         self.referrals = referrals
         return True
 
+    def get_scores(self):
+        return self.scores
+
+    def get_referrals(self):
+        return self.referrals
+
 
 if __name__ == "__main__":
-    username = input("Input username: ")
-    passwd = input("Input password: ")
-    cms_fetcher = cmsFetcher(username, passwd)
+    usrname = input("Input username: ")
+    password = input("Input password: ")
+    cms_fetcher = cmsFetcher(usrname, password)
     if cms_fetcher.login():
-        if cms_fetcher.fetchScore():
-            print(cms_fetcher.scores)
+        if cms_fetcher.fetch_score():
+            print(cms_fetcher.get_scores())
         if cms_fetcher.get_referrals():
-            print(cms_fetcher.referrals)
+            print(cms_fetcher.get_referrals())
