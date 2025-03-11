@@ -184,5 +184,5 @@ if __name__ == "__main__":
     if cms_fetcher.login():
         if cms_fetcher.fetch_score():
             print(cms_fetcher.get_scores())
-        if cms_fetcher.get_referrals():
+        if cms_fetcher.fetch_referrals():
             print(cms_fetcher.get_referrals())
