@@ -158,11 +158,18 @@ class cmsFetcher:
             response = self.session.get(link)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
-                referral = soup.find("p", text=True).string
-                subject = soup.find("strong").string
+                referral = soup.find("p", text=True).text
+                subject = soup.find_all("strong")[
+                    0
+                ].text  # the first <strong> is the subject
+                categories = soup.find_all("strong")[
+                    1
+                ].text  # the second <strong> is the categories
+                categories = categories.split(",")[1].strip()
+                positive = not ("Area of Concern" in categories)
                 if subject not in referrals:
                     referrals[subject] = []
-                referrals[subject].append(referral)
+                referrals[subject].append((referral, positive))
             else:
                 print(f"[{response.status_code}] ", response.text)
                 return False
