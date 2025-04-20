@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API Test Interface</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background-color: #ccc;
+      }
+      #captchaImage {
+        margin: 10px 0;
+        max-width: 200px;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .error {
+        color: red;
+        margin-top: 5px;
+      }
+      #recommendedImage {
+        max-width: 100%;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>API Test Interface</h1>
+
+      <!-- Error Display -->
+      <div
+        id="errorDisplay"
+        style="color: red; margin-bottom: 15px; display: none"
+      ></div>
+
+      <!-- Login Form -->
+      <div id="loginForm">
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" required />
+        </div>
+        <button onclick="login()">Login</button>
+      </div>
+
+      <!-- Captcha Form -->
+      <div id="captchaForm" style="display: none">
+        <img id="captchaImage" alt="Captcha" />
+        <div class="form-group">
+          <label for="captcha">Enter Captcha:</label>
+          <input type="text" id="captcha" required />
+        </div>
+        <button onclick="authenticate()">Submit</button>
+      </div>
+
+      <!-- Result Display -->
+      <div id="result" style="display: none"></div>
+    </div>
+
+    <script>
+      let sessionToken = "";
+      let authToken = "";
+
+      function showError(message) {
+        const errorDiv = document.getElementById("errorDisplay");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+      }
+
+      async function login() {
+        try {
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+          const formData = new FormData();
+          formData.append("username", username);
+          formData.append("password", password);
+
+          console.log("Sending login request...");
+          const response = await fetch("http://127.0.0.1:8000/login", {
+            method: "POST",
+            body: formData,
+          });
+          console.log("Login response status:", response.status);
+          console.log("Login response headers:", [
+            ...response.headers.entries(),
+          ]);
+
+          if (response.ok) {
+            // Get session token from headers
+            sessionToken = response.headers.get("session-token");
+            console.log("Received session token:", sessionToken);
+
+            if (!sessionToken) {
+              throw new Error("No session token received");
+            }
+
+            // Display captcha image
+            const blob = await response.blob();
+            const imageUrl = URL.createObjectURL(blob);
+            document.getElementById("captchaImage").src = imageUrl;
+
+            // Show captcha form
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("captchaForm").style.display = "block";
+          } else {
+            throw new Error("Login failed");
+          }
+        } catch (error) {
+          showError("Login error: " + error.message);
+          console.error("Login error:", error);
+        }
+      }
+
+      async function authenticate() {
+        const captcha = document.getElementById("captcha").value;
+
+        try {
+          if (!sessionToken) {
+            throw new Error("No session token available");
+          }
+
+          console.log("Authenticating with session token:", sessionToken);
+          const formData = new FormData();
+          formData.append("session_token", sessionToken);
+          formData.append("captcha", captcha);
+
+          console.log("Sending auth request with token:", sessionToken);
+          const response = await fetch("http://127.0.0.1:8000/auth", {
+            method: "POST",
+            body: formData,
+          });
+          console.log("Auth response status:", response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Auth response data:", data);
+            authToken = data.auth_token;
+            getImage();
+          } else {
+            throw new Error("Authentication failed");
+          }
+        } catch (error) {
+          showError("Authentication error: " + error.message);
+          console.error("Authentication error:", error);
+        }
+      }
+
+      async function getImage() {
+        try {
+          const response = await fetch(
+            `http://127.0.0.1:8000/image?auth_token=${authToken}`
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const resultDiv = document.getElementById("result");
+            resultDiv.style.display = "block";
+            resultDiv.innerHTML = `
+              <h2>Results</h2>
+              <p>Subject: ${data.subject}</p>
+              <p>Level: ${data.level}</p>
+              <p>Source: <a href="${data.source_url}" target="_blank">Original Source</a></p>
+              <a href="${data.source_url}" target="_blank">
+                <img id="recommendedImage" src="${data.image_url}" alt="Recommended Image" style="cursor: pointer;">
+              </a>
+            `;
+            document.getElementById("captchaForm").style.display = "none";
+          } else {
+            throw new Error("Failed to get image");
+          }
+        } catch (error) {
+          showError("Image fetch error: " + error.message);
+          console.error("Image fetch error:", error);
+        }
+      }
+    </script>
+  </body>
+</html>

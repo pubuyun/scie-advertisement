@@ -214,7 +214,11 @@ if __name__ == "__main__":
     usrname = input("Input username: ")
     password = input("Input password: ")
     cms_fetcher = cmsFetcher(usrname, password)
-    if cms_fetcher.login():
+    with open("captcha.png", "wb") as f:
+        f.write(cms_fetcher.login())
+    captcha = input("Input captcha: ")
+    cms_fetcher.set_safecode(captcha)
+    if cms_fetcher.auth():
         if cms_fetcher.fetch_score():
             print(cms_fetcher.get_scores())
         if cms_fetcher.fetch_referrals():
