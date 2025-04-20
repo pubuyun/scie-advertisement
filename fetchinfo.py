@@ -53,13 +53,34 @@ class cmsFetcher:
         self.passwd = passwd
         self.scoreurl = f"https://www.alevel.com.cn/user/{username}/assessment/list/"
         self.referralurl = f"https://www.alevel.com.cn/user/{username}/referralcomment"
+        self.safecode = None
         self.session = requests.Session()
+        self.session.headers.update(self.headers)
 
     def login(self):
-        self.session.headers.update(self.headers)
         response = self.session.get(self.loginurl)
-        time.sleep(0.2)
+        if response.status_code == 200:
+            # check if the page contains "登录" (login) to see if the login page is loaded
+            if "登录" not in response.text:
+                print("Login page not loaded.")
+                return False
+            # get the src of the image with id="safecode"
+            soup = BeautifulSoup(response.text, "html.parser")
+            safecode_img = soup.find("img", id="safecode")
+            if safecode_img:
+                safecode_src = self.mainurl + safecode_img.get("src")
 
+                response = self.session.get(safecode_src)
+                if response.status_code == 200:
+                    return response.content
+        else:
+            print(f"[{response.status_code}] ", response.text)
+            return False
+
+    def set_safecode(self, safecode):
+        self.safecode = safecode
+
+    def auth(self):
         response = self.session.post(self.encrypturl, data=f"psid={self.username}")
         if response.status_code == 200:
             ResponseData = response.json()
@@ -81,6 +102,7 @@ class cmsFetcher:
             "nosence": Nosence,
             "psid": self.username,
             "passwd": PasswdEncrypted,
+            "authnum": self.safecode,
             "rememberusername": 1,
             "post": "登 录/Login",
         }
@@ -157,19 +179,23 @@ class cmsFetcher:
         for link in referral_links:
             response = self.session.get(link)
             if response.status_code == 200:
-                soup = BeautifulSoup(response.text, "html.parser")
-                referral = soup.find("p", text=True).text
-                subject = soup.find_all("strong")[
-                    0
-                ].text  # the first <strong> is the subject
-                categories = soup.find_all("strong")[
-                    1
-                ].text  # the second <strong> is the categories
-                categories = categories.split(",")[1].strip()
-                positive = not ("Area of Concern" in categories)
-                if subject not in referrals:
-                    referrals[subject] = []
-                referrals[subject].append((referral, positive))
+                try:
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    referral = soup.find("p", text=True).text
+                    subject = soup.find_all("strong")[
+                        0
+                    ].text  # the first <strong> is the subject
+                    categories = soup.find_all("strong")[
+                        1
+                    ].text  # the second <strong> is the categories
+                    categories = categories.split(",")[1].strip()
+                    positive = "Area of Concern" not in categories
+                    if subject not in referrals:
+                        referrals[subject] = []
+                    referrals[subject].append((referral, positive))
+                except Exception as e:
+                    print(f"Error parsing referral: {e}")
+                    continue
             else:
                 print(f"[{response.status_code}] ", response.text)
                 return False
