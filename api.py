@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import io
+import traceback
 from fetchinfo import cmsFetcher
 from find_adv import calculate_subject_decisions, process_subjects
 
@@ -62,6 +63,7 @@ async def login(username: str = Form(...), password: str = Form(...)):
                     status_code=401, detail="Login failed: Invalid credentials"
                 )
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -92,9 +94,11 @@ async def auth(session_token: str = Form(...), captcha: str = Form(...)):
         )
 
     except HTTPException as e:
+        traceback.print_exc()
         print(f"HTTP Exception: {str(e)}")
         raise e
     except Exception as e:
+        traceback.print_exc()
         print(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
@@ -126,6 +130,7 @@ async def get_image(auth_token: str):
         return JSONResponse(result)
 
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
