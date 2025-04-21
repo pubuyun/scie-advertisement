@@ -26,25 +26,43 @@ user_sessions = {}
 async def login(username: str = Form(...), password: str = Form(...)):
     try:
         fetcher = cmsFetcher(username, password)
-        captcha_bytes = fetcher.login()
-
-        if not captcha_bytes:
-            raise HTTPException(status_code=400, detail="Failed to load login page")
+        needs_captcha, result = fetcher.login()
 
         # Save fetcher instance to session
         session_token = username  # Using username as session token for simplicity
         user_sessions[session_token] = fetcher
 
-        # Return captcha image
-        return StreamingResponse(
-            io.BytesIO(captcha_bytes),
-            media_type="image/png",
-            headers={
-                "session-token": session_token,
-                "Access-Control-Expose-Headers": "session-token",
-            },
-        )
+        if needs_captcha:
+            # Return captcha image
+            return StreamingResponse(
+                io.BytesIO(result),
+                media_type="image/png",
+                headers={
+                    "session-token": session_token,
+                    "Access-Control-Expose-Headers": "session-token",
+                    "requires-captcha": "true",
+                },
+            )
+        else:
+            # Direct login successful
+            if result:
+                response = JSONResponse(
+                    {
+                        "status": "success",
+                        "auth_token": session_token,
+                        "requires_captcha": False,
+                        "message": "Login successful",
+                    }
+                )
+                response.headers["session-token"] = session_token
+                response.headers["Access-Control-Expose-Headers"] = "session-token"
+                return response
+            else:
+                raise HTTPException(
+                    status_code=401, detail="Login failed: Invalid credentials"
+                )
     except Exception as e:
+        print
         raise HTTPException(status_code=500, detail=str(e))
 
 

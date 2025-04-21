@@ -134,14 +134,36 @@
               throw new Error("No session token received");
             }
 
-            // Display captcha image
-            const blob = await response.blob();
-            const imageUrl = URL.createObjectURL(blob);
-            document.getElementById("captchaImage").src = imageUrl;
+            const requiresCaptcha = response.headers.get("requires-captcha");
+            console.log("Requires captcha:", requiresCaptcha);
 
-            // Show captcha form
-            document.getElementById("loginForm").style.display = "none";
-            document.getElementById("captchaForm").style.display = "block";
+            if (requiresCaptcha === "true") {
+              // Clone the response for blob processing
+              const responseClone = response.clone();
+              // Display captcha image
+              const blob = await responseClone.blob();
+              const imageUrl = URL.createObjectURL(blob);
+              document.getElementById("captchaImage").src = imageUrl;
+
+              // Show captcha form
+              document.getElementById("loginForm").style.display = "none";
+              document.getElementById("captchaForm").style.display = "block";
+            } else {
+              // Clone the response for JSON processing
+              const responseClone = response.clone();
+              // Parse JSON response for direct login
+              const data = await responseClone.json();
+              console.log("Direct login response:", data);
+
+              if (data.status === "success") {
+                authToken = data.auth_token;
+                document.getElementById("loginForm").style.display = "none";
+                // Skip captcha and get image directly
+                getImage();
+              } else {
+                throw new Error(data.message || "Login failed");
+              }
+            }
           } else {
             throw new Error("Login failed");
           }

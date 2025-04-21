@@ -69,10 +69,12 @@ class cmsFetcher:
             safecode_img = soup.find("img", id="safecode")
             if safecode_img:
                 safecode_src = self.mainurl + safecode_img.get("src")
-
                 response = self.session.get(safecode_src)
                 if response.status_code == 200:
-                    return response.content
+                    return True, response.content
+            else:
+                return False, self.auth(with_safecode=False)
+
         else:
             print(f"[{response.status_code}] ", response.text)
             return False
@@ -80,7 +82,7 @@ class cmsFetcher:
     def set_safecode(self, safecode):
         self.safecode = safecode
 
-    def auth(self):
+    def auth(self, with_safecode=True):
         response = self.session.post(self.encrypturl, data=f"psid={self.username}")
         if response.status_code == 200:
             ResponseData = response.json()
@@ -102,10 +104,12 @@ class cmsFetcher:
             "nosence": Nosence,
             "psid": self.username,
             "passwd": PasswdEncrypted,
-            "authnum": self.safecode,
             "rememberusername": 1,
             "post": "登 录/Login",
         }
+        if with_safecode:
+            RequestData["safecode"] = self.safecode
+
         response = self.session.post(self.loginurl, data=RequestData)
         if response.status_code == 200:
             if "登录" in response.text:
