@@ -31,15 +31,15 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Check if required ports are available
-check_port 8000
-if [ $? -eq 1 ]; then
-    error "Port 8000 is already in use"
-    exit 1
-fi
-
 check_port 8080
 if [ $? -eq 1 ]; then
     error "Port 8080 is already in use"
+    exit 1
+fi
+
+check_port 8090
+if [ $? -eq 1 ]; then
+    error "Port 8090 is already in use"
     exit 1
 fi
 
@@ -47,8 +47,8 @@ fi
 mkdir -p logs
 
 # Start API server
-log "Starting API server on port 8000..."
-nohup python3 -m uvicorn api:app --host 0.0.0.0 --port 8000 > logs/api.log 2>&1 &
+log "Starting API server on port 8080..."
+nohup python3 -m uvicorn api:app --host 0.0.0.0 --port 8080 > logs/api.log 2>&1 &
 API_PID=$!
 
 # Wait a moment to ensure API server starts
@@ -61,8 +61,8 @@ if ! ps -p $API_PID > /dev/null; then
 fi
 
 # Start web server
-log "Starting web server on port 8080..."
-nohup python3 -m http.server 8080 > logs/web.log 2>&1 &
+log "Starting web server on port 8090..."
+nohup python3 -m http.server 8090 > logs/web.log 2>&1 &
 WEB_PID=$!
 
 # Wait a moment to ensure web server starts
@@ -76,8 +76,8 @@ if ! ps -p $WEB_PID > /dev/null; then
 fi
 
 log "Both servers started successfully!"
-log "API server running on http://localhost:8000"
-log "Web server running on http://localhost:8080"
+log "API server running on http://localhost:8080"
+log "Web server running on http://localhost:8090"
 log "API logs: logs/api.log"
 log "Web server logs: logs/web.log"
 
