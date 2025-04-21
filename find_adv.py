@@ -80,21 +80,34 @@ def calculate_subject_decisions(scores, referrals):
 
 if __name__ == "__main__":
     # Example usage
-    fetcher = cmsFetcher(input("Input username: "), input("Input password: "))
-    with open("captcha.png", "wb") as f:
-        f.write(fetcher.login())
-    captcha = input("Input captcha: ")
-    fetcher.set_safecode(captcha)
-    if fetcher.auth():
-        print("Login successful.")
+    username = input("Input username: ")
+    password = input("Input password: ")
+    fetcher = cmsFetcher(username, password)
+
+    needs_captcha, result = fetcher.login()
+    if needs_captcha:
+        print("Captcha required")
+        with open("captcha.png", "wb") as f:
+            f.write(result)
+        captcha = input("Input captcha: ")
+        fetcher.set_safecode(captcha)
+        if not fetcher.auth():
+            print("Login failed.")
+            exit(1)
     else:
-        print("Login failed.")
-        exit()
+        if not result:
+            print("Login failed.")
+            exit(1)
+
+    print("Login successful.")
     if fetcher.fetch_score() and fetcher.fetch_referrals():
         scores = fetcher.get_scores()
         referrals = fetcher.get_referrals()
         decisions = calculate_subject_decisions(scores, referrals)
         processed_decisions = process_subjects(decisions)
+        print("Decisions:")
+        print(decisions)
+        print("\nProcessed decision:")
         print(processed_decisions)
     else:
         print("Failed to fetch data.")
