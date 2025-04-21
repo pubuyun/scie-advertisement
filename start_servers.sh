@@ -37,9 +37,9 @@ if [ $? -eq 1 ]; then
     exit 1
 fi
 
-check_port 8090
+check_port 9080
 if [ $? -eq 1 ]; then
-    error "Port 8090 is already in use"
+    error "Port 9080 is already in use"
     exit 1
 fi
 
@@ -61,8 +61,8 @@ if ! ps -p $API_PID > /dev/null; then
 fi
 
 # Start web server
-log "Starting web server on port 8090..."
-nohup python3 -m http.server 8090 > logs/web.log 2>&1 &
+log "Starting web server on port 9080..."
+nohup python3 -m http.server 9080 > logs/web.log 2>&1 &
 WEB_PID=$!
 
 # Wait a moment to ensure web server starts
@@ -77,7 +77,7 @@ fi
 
 log "Both servers started successfully!"
 log "API server running on http://localhost:8080"
-log "Web server running on http://localhost:8090"
+log "Web server running on http://localhost:9080"
 log "API logs: logs/api.log"
 log "Web server logs: logs/web.log"
 
