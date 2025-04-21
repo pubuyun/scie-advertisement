@@ -187,7 +187,7 @@
           formData.append("captcha", captcha);
 
           console.log("Sending auth request with token:", sessionToken);
-          const response = await fetch("http://127.0.0.1:8000/auth", {
+          const response = await fetch("http://127.0.0.1:8080/auth", {
             method: "POST",
             body: formData,
           });

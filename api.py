@@ -62,7 +62,6 @@ async def login(username: str = Form(...), password: str = Form(...)):
                     status_code=401, detail="Login failed: Invalid credentials"
                 )
     except Exception as e:
-        print
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -133,4 +132,4 @@ async def get_image(auth_token: str):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True)
