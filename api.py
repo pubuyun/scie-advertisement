@@ -40,7 +40,7 @@ async def login(username: str = Form(...), password: str = Form(...)):
                 headers={
                     "session-token": session_token,
                     "Access-Control-Expose-Headers": "session-token",
-                    "requires-captcha": "true",
+                    "requires-captcha": True,
                 },
             )
         else:
