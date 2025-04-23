@@ -16,7 +16,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
-    expose_headers=["session-token"],  # Allow frontend to read session-token header
+    expose_headers=[
+        "session-token",
+        "requires-captcha",
+    ],  # Allow frontend to read session-token header
 )
 
 # Store user session information
