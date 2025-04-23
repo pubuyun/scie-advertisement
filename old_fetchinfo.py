@@ -69,12 +69,10 @@ class cmsFetcher:
             safecode_img = soup.find("img", id="safecode")
             if safecode_img:
                 safecode_src = self.mainurl + safecode_img.get("src")
+
                 response = self.session.get(safecode_src)
                 if response.status_code == 200:
-                    return True, response.content
-            else:
-                return False, self.auth(with_safecode=False)
-
+                    return response.content
         else:
             print(f"[{response.status_code}] ", response.text)
             return False
@@ -82,7 +80,7 @@ class cmsFetcher:
     def set_safecode(self, safecode):
         self.safecode = safecode
 
-    def auth(self, with_safecode=True):
+    def auth(self):
         response = self.session.post(self.encrypturl, data=f"psid={self.username}")
         if response.status_code == 200:
             ResponseData = response.json()
@@ -104,12 +102,10 @@ class cmsFetcher:
             "nosence": Nosence,
             "psid": self.username,
             "passwd": PasswdEncrypted,
+            "authnum": self.safecode,
             "rememberusername": 1,
             "post": "登 录/Login",
         }
-        if with_safecode:
-            RequestData["authnum"] = self.safecode
-
         response = self.session.post(self.loginurl, data=RequestData)
         if response.status_code == 200:
             if "登录" in response.text:
@@ -218,19 +214,12 @@ if __name__ == "__main__":
     usrname = input("Input username: ")
     password = input("Input password: ")
     cms_fetcher = cmsFetcher(usrname, password)
-    needs_captcha, captcha_image = cms_fetcher.login()
-    if needs_captcha:
-        with open("captcha.png", "wb") as f:
-            f.write(captcha_image)
-        print("Captcha image saved as captcha.png")
-        captcha = input("Input captcha: ")
-        cms_fetcher.set_safecode(captcha)
-        if not cms_fetcher.auth():
-            print("Authentication failed: Wrong captcha or session expired")
-            exit(1)
-    else:
-        print("No captcha needed, login successful!")
-    if cms_fetcher.fetch_score():
-        print(cms_fetcher.get_scores())
-    if cms_fetcher.fetch_referrals():
-        print(cms_fetcher.get_referrals())
+    with open("captcha.png", "wb") as f:
+        f.write(cms_fetcher.login())
+    captcha = input("Input captcha: ")
+    cms_fetcher.set_safecode(captcha)
+    if cms_fetcher.auth():
+        if cms_fetcher.fetch_score():
+            print(cms_fetcher.get_scores())
+        if cms_fetcher.fetch_referrals():
+            print(cms_fetcher.get_referrals())
