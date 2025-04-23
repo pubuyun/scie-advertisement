@@ -34,6 +34,7 @@ import time
 import hashlib
 import re
 from bs4 import BeautifulSoup
+import getpass
 
 
 class cmsFetcher:
@@ -216,7 +217,7 @@ class cmsFetcher:
 
 if __name__ == "__main__":
     usrname = input("Input username: ")
-    password = input("Input password: ")
+    password = getpass.getpass("Input password: ")
     cms_fetcher = cmsFetcher(usrname, password)
     needs_captcha, captcha_image = cms_fetcher.login()
     if needs_captcha:

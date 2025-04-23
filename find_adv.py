@@ -1,6 +1,7 @@
 import requests
 import random
 from fetchinfo import cmsFetcher
+import getpass
 
 API_KEY = "6d6093569ddde814c5d259127045d26d5eb306340dd5624023942b871aaf3f71"
 
@@ -81,7 +82,7 @@ def calculate_subject_decisions(scores, referrals):
 if __name__ == "__main__":
     # Example usage
     username = input("Input username: ")
-    password = input("Input password: ")
+    password = getpass.getpass("Input password: ")
     fetcher = cmsFetcher(username, password)
 
     needs_captcha, result = fetcher.login()
